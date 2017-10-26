@@ -1,0 +1,229 @@
+VARIABLE basic_percent NUMBER
+VARIABLE pf_percent NUMBER
+
+-- Include PROMPT command here
+ACCEPT empno PROMPT 'Please enter your employee number: '
+
+SET SERVEROUTPUT ON
+SET VERIFY OFF
+
+DECLARE
+   empno NUMBER(6):=&empno; -- Modify the declaration to accept the user
+                                                 --input
+   fname VARCHAR2(15);
+   emp_sal NUMBER(10);
+BEGIN
+   :basic_percent:=45;
+   :pf_percent:=12; 
+
+-- Modify the select statement to include substitution variable empno
+
+   SELECT first_name, salary INTO fname, emp_sal
+   FROM employees WHERE employee_id=empno;
+
+   DBMS_OUTPUT.PUT_LINE(' Hello '|| fname);
+   DBMS_OUTPUT.PUT_LINE('YOUR SALARY IS : '||emp_sal);
+   DBMS_OUTPUT.PUT_LINE('YOUR CONTRIBUTION TOWARDS PF: 
+    '||emp_sal*:basic_percent/100*:pf_percent/100);
+END;
+/
+SET SERVEROUTPUT ON
+DECLARE
+   max_deptno	NUMBER;
+BEGIN
+   SELECT MAX(department_id)  INTO max_deptno  FROM	departments;
+   DBMS_OUTPUT.PUT_LINE('The maximum department_id is : ' || max_deptno);
+ END;
+
+2.	
+VARIABLE dept_id NUMBER
+SET SERVEROUTPUT ON
+DECLARE
+   dept_name departments.department_name%TYPE:= 'Education';
+   max_deptno	NUMBER;
+BEGIN
+   SELECT MAX(department_id)  INTO max_deptno  FROM departments;
+   DBMS_OUTPUT.PUT_LINE('The maximum department_id is : ' ||       
+   max_deptno);
+   :dept_id := 10 + max_deptno;
+   INSERT INTO departments (department_id, department_name, location_id) 
+   VALUES (:dept_id,dept_name, NULL);
+   DBMS_OUTPUT.PUT_LINE (' SQL%ROWCOUNT gives ' || SQL%ROWCOUNT);
+ END;
+/
+SELECT * FROM  departments  WHERE  department_id=:dept_id;
+
+3.	
+ACCEPT p_department_id   PROMPT 'Please enter the department number'
+ACCEPT p_location_id     PROMPT 'Please entre the department location'
+DECLARE
+   v_department_id  departments.department_id%TYPE:=&p_department_id;
+   v_location_id     departments.location_id%TYPE:=&p_location_id;
+BEGIN
+   UPDATE departments 
+   SET location_id=v_location_id 
+   WHERE department_id=v_department_id;
+END;
+/
+4.	
+ACCEPT p_department_id   PROMPT 'Please enter the department number'
+DECLARE
+   v_department_id  departments.department_id%TYPE:=&p_department_id;
+BEGIN
+   delete from departments 
+   WHERE  department_id=v_department_id;
+END;
+/
+ 
+2ºSem-Cap 05-Estruturas de Controle
+1.	
+BEGIN
+FOR i in 1..10 LOOP
+  IF i = 6 or i = 8 THEN
+    null;
+  ELSE
+    INSERT INTO messages(results)
+    VALUES (i);
+ END IF;
+END LOOP;
+ COMMIT;
+END;
+/
+SELECT * FROM messages;
+2.	
+ACCEPT p_empno PROMPT 'Informe o número do funcionário: '
+DECLARE
+  v_empno     emp.employee_id%TYPE := TO_NUMBER(&p_empno);
+  v_asterisk  emp.stars%TYPE := NULL;
+  v_sal	      emp.salary%TYPE;
+BEGIN
+    SELECT NVL(ROUND(salary/1000), 0)  
+    INTO v_sal
+    FROM emp  
+    WHERE employee_id = v_empno;
+    
+    FOR i IN 1..v_sal LOOP
+  		v_asterisk := v_asterisk ||'*';
+	  END LOOP;
+
+    UPDATE emp 
+    SET stars = v_asterisk
+    WHERE employee_id = v_empno;
+	  
+    COMMIT;
+END;
+/
+ 
+2ºSem-Cap 06-Registros PL/SQL
+1.	
+SET SERVEROUTPUT ON
+SET VERIFY OFF
+DEFINE countryid = CA
+DECLARE
+ country_record countries%ROWTYPE;
+BEGIN
+ SELECT	* 
+ INTO	country_record
+ FROM	countries
+ WHERE	country_id = UPPER('&countryid');
+
+ DBMS_OUTPUT.PUT_LINE ('Country Id: ' || country_record.country_id || 
+  ' Country Name: ' || country_record.country_name   
+  || ' Region: ' || country_record.region_id);
+
+END;
+ 
+2ºSem-Cap 07-Criando Cursores Explícitos
+1.	
+DROP TABLE top_dogs;
+
+CREATE TABLE hr.top_dogs
+(name VARCHAR2(25),
+salary NUMBER(11,2));
+
+ACCEPT p_num PROMPT 'Informe o número de maiores salários '
+DECLARE
+   v_num   NUMBER(3) := &p_num;
+   v_ename employees.last_name%TYPE;
+   v_sal   employees.salary%TYPE;
+   CURSOR emp_cursor IS
+      SELECT last_name, salary
+      FROM employees
+      ORDER BY 2 DESC;
+BEGIN
+   OPEN emp_cursor;
+   FETCH emp_cursor INTO v_ename, v_sal;
+   WHILE emp_cursor%ROWCOUNT <= v_num AND emp_cursor%FOUND LOOP
+      INSERT INTO top_dogs (name, salary)
+      VALUES (v_ename, v_sal);
+      FETCH emp_cursor INTO v_ename, v_sal;
+   END LOOP;
+  CLOSE emp_cursor;
+   COMMIT;
+END;
+/
+SELECT * FROM top_dogs;
+
+2.	
+truncate table top_dogs;
+
+ACCEPT p_num PROMPT 'Informe o número de maiores salários '
+DECLARE
+   v_num NUMBER(3) := &p_num;
+   v_ename       employees.last_name%TYPE;
+   v_current_sal employees.salary%TYPE;
+   v_last_sal    v_current_sal%TYPE;
+   CURSOR emp_cursor IS
+      SELECT last_name, salary
+      FROM employees
+      ORDER BY 2 DESC;
+BEGIN
+   OPEN emp_cursor;
+   FETCH emp_cursor INTO v_ename, v_current_sal;
+   WHILE emp_cursor%ROWCOUNT <= v_num AND emp_cursor%FOUND LOOP
+      INSERT INTO top_dogs (name, salary)
+      VALUES (v_ename, v_current_sal);
+      v_last_sal := v_current_sal;
+      FETCH emp_cursor INTO v_ename, v_current_sal;
+      IF v_last_sal = v_current_sal THEN
+         v_num := v_num + 1;
+      END IF;
+   END LOOP;
+   CLOSE emp_cursor;
+COMMIT;
+END;
+/
+SELECT * FROM top_dogs;
+
+
+ 
+
+DELETE FROM MESSAGES; 
+
+SET VERIFY OFF
+DEFINE sal = 6000 
+DECLARE
+  ename	employees.last_name%TYPE;
+  emp_sal		employees.salary%TYPE := &sal;
+BEGIN
+  SELECT	     last_name
+  INTO 		ename
+  FROM		employees
+  WHERE		salary = emp_sal;
+  INSERT INTO messages (results)
+  VALUES (ename || ' - ' || emp_sal);
+EXCEPTION
+  WHEN no_data_found THEN
+    INSERT INTO messages (results)
+    VALUES ('No employee with a salary of '|| TO_CHAR(emp_sal));
+  WHEN too_many_rows THEN
+    INSERT INTO messages (results)
+    VALUES ('More than one employee with a salary of '||
+             TO_CHAR(emp_sal));
+  WHEN others THEN
+    INSERT INTO messages (results)
+    VALUES ('Some other error occurred.');
+END;
+/
+SELECT * FROM messages;
+
